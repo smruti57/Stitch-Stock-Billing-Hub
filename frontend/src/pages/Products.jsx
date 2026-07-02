@@ -24,6 +24,8 @@ export default function Products() {
   const [showModal, setShowModal] = useState(false)
   const [showCategoryInput, setShowCategoryInput] = useState(false)
   const [newCategory, setNewCategory] = useState('')
+  const [editingCategory, setEditingCategory] = useState(null)
+  const [renameCategory, setRenameCategory] = useState('')
   const [editingProduct, setEditingProduct] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
@@ -77,6 +79,61 @@ export default function Products() {
     setCategoryFilter(trimmed)
     setNewCategory('')
     setShowCategoryInput(false)
+  }
+
+  const openEditCategory = (category) => {
+    setEditingCategory(category)
+    setRenameCategory(category)
+    setShowCategoryInput(false)
+  }
+
+  const saveCategoryRename = () => {
+    const trimmed = renameCategory.trim()
+    if (!editingCategory || !trimmed) return
+    if (trimmed.toLowerCase() === editingCategory.toLowerCase()) {
+      setEditingCategory(null)
+      setRenameCategory('')
+      return
+    }
+    const exists = categories.some((cat) => cat.toLowerCase() === trimmed.toLowerCase())
+    if (exists) return
+
+    setProducts((prev) => prev.map((product) => (
+      product.category === editingCategory ? { ...product, category: trimmed } : product
+    )))
+    setCategories((prev) => prev.map((cat) => (cat === editingCategory ? trimmed : cat)))
+    if (categoryFilter === editingCategory) {
+      setCategoryFilter(trimmed)
+    }
+    setEditingCategory(null)
+    setRenameCategory('')
+  }
+
+  const deleteCategory = (category) => {
+    if (category === 'All') return
+
+    const assignedProducts = products.filter((product) => product.category === category)
+    if (assignedProducts.length > 0) {
+      const confirmDelete = window.confirm(
+        `There are ${assignedProducts.length} product(s) in ${category}. Delete the category and move them to 'Uncategorized'?`
+      )
+      if (!confirmDelete) return
+      if (!categories.some((cat) => cat.toLowerCase() === 'uncategorized')) {
+        setCategories((prev) => [...prev, 'Uncategorized'])
+      }
+      setProducts((prev) => prev.map((product) => (
+        product.category === category ? { ...product, category: 'Uncategorized' } : product
+      )))
+      if (categoryFilter === category) {
+        setCategoryFilter('Uncategorized')
+      }
+    }
+
+    setCategories((prev) => prev.filter((cat) => cat !== category))
+    if (editingCategory === category) {
+      setEditingCategory(null)
+      setRenameCategory('')
+    }
   }
 
   const closeModal = () => {
@@ -141,11 +198,23 @@ export default function Products() {
         </div>
         <div className="cat-filters">
           {categories.map((cat) => (
-            <button key={cat} className={`cat-btn ${categoryFilter === cat ? 'active' : ''}`} onClick={() => setCategoryFilter(cat)}>
-              {cat}
-            </button>
+            <div key={cat} className={`cat-chip ${categoryFilter === cat ? 'active' : ''}`}>
+              <button className="cat-btn" onClick={() => setCategoryFilter(cat)}>
+                {cat}
+              </button>
+              {cat !== 'All' && (
+                <div className="cat-actions">
+                  <button type="button" className="cat-icon-btn" onClick={() => openEditCategory(cat)} title={`Edit ${cat}`}>
+                    ✎
+                  </button>
+                  <button type="button" className="cat-icon-btn danger" onClick={() => deleteCategory(cat)} title={`Delete ${cat}`}>
+                    ×
+                  </button>
+                </div>
+              )}
+            </div>
           ))}
-          <button type="button" className="cat-add-btn" onClick={() => setShowCategoryInput((prev) => !prev)}>
+          <button type="button" className="cat-add-btn" onClick={() => { setShowCategoryInput((prev) => !prev); setEditingCategory(null); setRenameCategory('') }}>
             + Add Category
           </button>
         </div>
@@ -161,6 +230,22 @@ export default function Products() {
               Add
             </button>
             <button type="button" className="btn-secondary btn-sm" onClick={() => { setShowCategoryInput(false); setNewCategory('') }}>
+              Cancel
+            </button>
+          </div>
+        )}
+        {editingCategory && (
+          <div className="cat-add-row">
+            <input
+              className="form-input category-input"
+              value={renameCategory}
+              onChange={(e) => setRenameCategory(e.target.value)}
+              placeholder="Rename category"
+            />
+            <button type="button" className="btn-primary btn-sm" onClick={saveCategoryRename}>
+              Save
+            </button>
+            <button type="button" className="btn-secondary btn-sm" onClick={() => { setEditingCategory(null); setRenameCategory('') }}>
               Cancel
             </button>
           </div>
@@ -259,9 +344,14 @@ export default function Products() {
         .search-input { width: 100%; padding: 10px 16px 10px 40px; background: white; border: none; border-radius: 12px; font-size: 13px; font-family: 'Inter', sans-serif; color: #121927; box-shadow: 0 2px 8px rgba(0,0,0,0.05); outline: none; }
         .search-input:focus { box-shadow: 0 0 0 2px rgba(177,148,76,0.25); }
         .cat-filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .cat-chip { display: flex; align-items: center; gap: 4px; }
         .cat-btn { padding: 8px 16px; border: none; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; background: white; color: #64748b; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: all 0.2s; }
         .cat-btn.active { background: linear-gradient(135deg, #735b18, #b1944c); color: white; box-shadow: 0 4px 12px rgba(177,148,76,0.3); }
         .cat-btn:hover:not(.active) { background: #f1f5f9; }
+        .cat-actions { display: flex; gap: 4px; }
+        .cat-icon-btn { width: 24px; height: 24px; border: none; border-radius: 50%; background: #f1f5f9; color: #475569; cursor: pointer; font-weight: 700; display: grid; place-items: center; transition: background 0.2s; }
+        .cat-icon-btn:hover { background: #e2e8f0; }
+        .cat-icon-btn.danger { color: #b91c1c; }
         .cat-add-btn { border: 1px dashed #c9c9c9; background: white; color: #334155; padding: 8px 14px; border-radius: 20px; font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
         .cat-add-btn:hover { background: #f8fafc; }
         .cat-add-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 12px; }

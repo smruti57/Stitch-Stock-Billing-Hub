@@ -12,9 +12,14 @@ const router = express.Router();
 
 router.use(protect);
 
-const nextInvoiceNumber = async (ownerId) => {
-  const count = await Invoice.count({ where: { ownerId } });
-  return `INV-${String(count + 1).padStart(4, "0")}`;
+const nextInvoiceNumber = async () => {
+  const invoices = await Invoice.findAll({ attributes: ["invoiceNumber"], raw: true });
+  const usedNumbers = new Set(invoices.map((inv) => inv.invoiceNumber));
+
+  for (let next = 1; ; next += 1) {
+    const invoiceNumber = `INV-${String(next).padStart(4, "0")}`;
+    if (!usedNumbers.has(invoiceNumber)) return invoiceNumber;
+  }
 };
 
 router.get("/stats/dashboard", async (req, res) => {
