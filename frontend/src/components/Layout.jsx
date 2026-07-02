@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 /* ─── Layout Component ──────────────────────────────────────────── */
-export default function Layout({ children, showSidebar = true }) {
+export default function Layout({ children, showSidebar = true, onSidebarToggle }) {
   const { isAuthenticated } = useAuth()
 
   return (
@@ -11,7 +11,12 @@ export default function Layout({ children, showSidebar = true }) {
       <header className="header">
         <div className="header-content">
           <div className="header-brand">
-            <Link to="/" className="header-logo-link">
+            <button
+              type="button"
+              className="header-logo-link"
+              onClick={onSidebarToggle}
+              aria-label="Toggle sidebar"
+            >
               <div className="header-logo">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
@@ -21,7 +26,7 @@ export default function Layout({ children, showSidebar = true }) {
                 <h1 className="header-brand-name">Stitch</h1>
                 <p className="header-brand-sub">Stock &amp; Billing Hub</p>
               </div>
-            </Link>
+            </button>
           </div>
 
           <nav className="header-nav">
@@ -121,13 +126,14 @@ export default function Layout({ children, showSidebar = true }) {
         }
 
         .header-content {
-          max-width: 1200px;
+          max-width: 1440px;
           margin: 0 auto;
-          padding: 0 1rem;
+          padding: 0 2rem;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          height: 4rem;
+          height: 72px;
+          min-height: 72px;
         }
 
         .header-brand {
@@ -210,6 +216,11 @@ export default function Layout({ children, showSidebar = true }) {
         /* ── Main Content ── */
         .main-content {
           flex: 1;
+          width: 100%;
+          max-w: 1440px;
+          margin: 0 auto;
+          padding: 2.5rem 2rem;
+          box-sizing: border-box
         }
 
         /* ── Footer ── */
@@ -220,9 +231,9 @@ export default function Layout({ children, showSidebar = true }) {
         }
 
         .footer-content {
-          max-width: 1200px;
+          max-width: 1440px;
           margin: 0 auto;
-          padding: 3rem 1rem 2rem;
+          padding: 3rem 2rem 2rem;
           display: grid;
           grid-template-columns: 1fr 3fr;
           gap: 3rem;
@@ -299,9 +310,9 @@ export default function Layout({ children, showSidebar = true }) {
         }
 
         .footer-bottom-content {
-          max-width: 1200px;
+          max-width: 1440px;
           margin: 0 auto;
-          padding: 1.5rem 1rem;
+          padding: 1.5rem 2rem;
           display: flex;
           align-items: center;
           justify-content: space-between;

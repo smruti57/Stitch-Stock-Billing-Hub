@@ -174,7 +174,10 @@ router.post("/", async (req, res) => {
 router.get("/", async (req, res) => {
   try {
     const { status, customerId, skip = 0, limit = 50 } = req.query;
-    const where = { ownerId: req.user.id };
+    const where = {};
+    if (req.user.role !== "admin") {
+      where.ownerId = req.user.id;
+    }
     if (status) where.status = status.toUpperCase();
     if (customerId) where.customerId = Number(customerId);
 
@@ -187,6 +190,139 @@ router.get("/", async (req, res) => {
 
     res.status(200).json({ success: true, total: count, invoices: rows });
   } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ── SALES ANALYTICS ENDPOINT ───────────────────────────────────
+router.get("/analytics/sales", async (req, res) => {
+  try {
+    const isAdmin = req.user.role === "admin";
+    const ownerId = req.user.id;
+    const ownerFilter = isAdmin ? {} : { ownerId };
+    const paidFilter = { ...ownerFilter, status: "PAID" };
+
+    // 1. Total Sales Metrics (All PAID invoices)
+    const totalSales = await Invoice.sum("total", { where: paidFilter });
+    const totalSubtotal = await Invoice.sum("subtotal", { where: paidFilter });
+    const totalGST = await Invoice.sum("gstAmount", { where: paidFilter });
+    const totalDiscount = await Invoice.sum("discount", { where: paidFilter });
+    const invoiceCount = await Invoice.count({ where: paidFilter });
+
+    // 2. Top Products - Get invoice items only for this owner or all admins
+    const ownerInvoiceIds = await Invoice.findAll({
+      attributes: ["id"],
+      where: { ...ownerFilter, status: "PAID" },
+      raw: true,
+    }).then(invs => invs.map(i => i.id));
+
+    const topProductsData = ownerInvoiceIds.length > 0
+      ? await InvoiceItem.findAll({
+          attributes: ["productId", "sku", "name", [fn("SUM", col("quantity")), "totalQty"], [fn("SUM", col("total")), "totalRevenue"]],
+          where: { invoiceId: ownerInvoiceIds },
+          group: ["productId", "sku", "name"],
+          raw: true,
+          order: [[literal("totalRevenue"), "DESC"]],
+          limit: 10,
+        })
+      : [];
+
+    // 3. Top Customers
+    const topCustomers = await Invoice.findAll({
+      where: { ...ownerFilter, status: "PAID" },
+      attributes: [
+        "customerId",
+        "customerName",
+        [fn("COUNT", col("id")), "orderCount"],
+        [fn("SUM", col("total")), "totalSpent"],
+      ],
+      group: ["customerId", "customerName"],
+      raw: true,
+      order: [[fn("SUM", col("total")), "DESC"]],
+      limit: 10,
+    });
+
+    // 4. Revenue by Payment Method
+    const paymentBreakdown = await Invoice.findAll({
+      where: { ...ownerFilter, status: "PAID" },
+      attributes: [
+        "paymentMethod",
+        [fn("COUNT", col("id")), "count"],
+        [fn("SUM", col("total")), "revenue"],
+      ],
+      group: ["paymentMethod"],
+      raw: true,
+    });
+
+    // 5. Customer Tier Analysis
+    const tierAnalysis = await Customer.findAll({
+      where: { ...ownerFilter },
+      attributes: [
+        "tier",
+        [fn("COUNT", col("id")), "count"],
+        [fn("SUM", col("totalSpent")), "totalSpent"],
+        [fn("AVG", col("totalSpent")), "avgSpent"],
+      ],
+      group: ["tier"],
+      raw: true,
+    });
+
+    // 6. Invoice Status Breakdown
+    const statusBreakdown = await Invoice.findAll({
+      where: { ...ownerFilter },
+      attributes: [
+        "status",
+        [fn("COUNT", col("id")), "count"],
+        [fn("SUM", col("total")), "total"],
+      ],
+      group: ["status"],
+      raw: true,
+    });
+
+    // 7. Average Order Value
+    const avgOrderValue = invoiceCount > 0 ? (totalSales / invoiceCount).toFixed(2) : 0;
+
+    res.status(200).json({
+      success: true,
+      analytics: {
+        summary: {
+          totalSales: parseFloat((totalSales || 0).toFixed(2)),
+          totalSubtotal: parseFloat((totalSubtotal || 0).toFixed(2)),
+          totalGST: parseFloat((totalGST || 0).toFixed(2)),
+          totalDiscount: parseFloat((totalDiscount || 0).toFixed(2)),
+          invoiceCount,
+          avgOrderValue: parseFloat(avgOrderValue),
+        },
+        topProducts: topProductsData.map(p => ({
+          ...p,
+          totalQty: parseInt(p.totalQty, 10),
+          totalRevenue: parseFloat(p.totalRevenue),
+        })),
+        topCustomers: topCustomers.map(c => ({
+          ...c,
+          orderCount: parseInt(c.orderCount, 10),
+          totalSpent: parseFloat(c.totalSpent),
+        })),
+        paymentBreakdown: paymentBreakdown.map(p => ({
+          ...p,
+          count: parseInt(p.count, 10),
+          revenue: parseFloat(p.revenue),
+        })),
+        tierAnalysis: tierAnalysis.map(t => ({
+          ...t,
+          count: parseInt(t.count, 10),
+          totalSpent: parseFloat(t.totalSpent || 0),
+          avgSpent: parseFloat(t.avgSpent || 0),
+        })),
+        statusBreakdown: statusBreakdown.map(s => ({
+          ...s,
+          count: parseInt(s.count, 10),
+          total: parseFloat(s.total || 0),
+        })),
+      },
+    });
+  } catch (err) {
+    console.error("Analytics error:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 });

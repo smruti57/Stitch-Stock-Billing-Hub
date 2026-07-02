@@ -33,3 +33,8 @@ export const getDashboardStats = async () => {
   const response = await api.get('/invoices/stats/dashboard')
   return response.data
 }
+
+export const getSalesAnalytics = async (params = {}) => {
+  const response = await api.get('/invoices/analytics/sales', { params })
+  return response.data
+}

@@ -30,27 +30,30 @@ function NavItem({ to, icon, label }) {
 }
 
 /* ─── Shell Layout ──────────────────────────────────────────────── */
-function Shell() {
+function Shell({ collapsed, toggleCollapsed }) {
   const { user, logout } = useAuth()
-  const [collapsed, setCollapsed] = useState(false)
 
   return (
     <div className="shell">
-      {/* Sidebar */}
       <nav className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
         <div className="sidebar-top">
           <div className="sidebar-brand">
-            <span className="sidebar-brand-logo">S</span>
-            {!collapsed && <div className="sidebar-brand-text">Stitch</div>}
+            <button
+              type="button"
+              className="sidebar-brand-logo"
+              onClick={toggleCollapsed}
+              aria-label={collapsed ? 'Expand menu' : 'Collapse menu'}
+              title="Toggle menu"
+            >
+              SF
+            </button>
+            {!collapsed && (
+              <div className="sidebar-brand-text">
+                <div>ShopFlow</div>
+                <p>Stock & Billing Hub</p>
+              </div>
+            )}
           </div>
-          <button
-            type="button"
-            className="sidebar-toggle"
-            onClick={() => setCollapsed(!collapsed)}
-            aria-label={collapsed ? 'Expand menu' : 'Collapse menu'}
-          >
-            <span className="sidebar-toggle-icon">{collapsed ? '»' : '«'}</span>
-          </button>
         </div>
 
         {/* Nav Links */}
@@ -121,37 +124,38 @@ function Shell() {
       </main>
 
       <style>{`
-        .shell { display: flex; min-height: 100vh; background: #f0ede8; }
+        .shell { display: flex; flex-direction: column; min-height: 100vh; background: #f0ede8; }
 
-        /* ── Sidebar ── */
+        /* ── Header ── */
         .sidebar {
-          width: 240px;
-          min-width: 240px;
-          background: #1a2332;
+          width: 260px;
+          min-width: 260px;
+          background: #0f1419;
           display: flex;
           flex-direction: column;
           position: fixed;
-          top: 0; left: 0; bottom: 0;
+          top: 0;
+          left: 0;
+          bottom: 0;
           z-index: 100;
           overflow-y: auto;
-          padding-top: 4rem; /* Account for header height */
+          padding-top: 0;
         }
         .sidebar.collapsed {
-          width: 72px;
-          min-width: 72px;
+          width: 84px;
+          min-width: 84px;
         }
         .sidebar-top {
           display: flex;
           align-items: center;
-          justify-content: space-between;
-          padding: 16px 12px;
+          justify-content: flex-start;
+          padding: 20px 16px;
           gap: 12px;
           position: sticky;
           top: 0;
-          background: rgba(26,35,50,0.95);
-          backdrop-filter: blur(12px);
+          background: #0f1419;
           z-index: 10;
-          border-bottom: 1px solid rgba(255,255,255,0.06);
+          border-bottom: 1px solid rgba(255,255,255,0.08);
         }
         .sidebar-brand {
           display: flex;
@@ -159,79 +163,101 @@ function Shell() {
           gap: 10px;
         }
         .sidebar-brand-logo {
-          width: 36px;
-          height: 36px;
-          border-radius: 10px;
-          background: linear-gradient(135deg, #735b18, #b1944c);
+          width: 32px;
+          height: 32px;
+          border-radius: 6px;
+          background: linear-gradient(135deg, #d4a853, #b1944c);
           color: white;
           display: grid;
           place-items: center;
-          font-weight: 800;
-          font-size: 0.95rem;
+          font-weight: 900;
+          font-size: 13px;
+          flex-shrink: 0;
+          border: none;
+          cursor: pointer;
+          transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .sidebar-brand-logo:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 10px 18px rgba(212,168,83,0.18);
         }
         .sidebar-brand-text {
-          color: #f8fafc;
-          font-size: 0.95rem;
-          font-weight: 700;
-          white-space: nowrap;
+          display: flex;
+          flex-direction: column;
+          gap: 1px;
         }
-        .sidebar-toggle {
-          width: 34px;
-          height: 34px;
-          border: none;
-          border-radius: 10px;
-          background: rgba(255,255,255,0.05);
-          color: #d4dce8;
-          cursor: pointer;
-          display: grid;
-          place-items: center;
-          transition: background 0.2s, transform 0.2s;
+        .sidebar-brand-text > div {
+          color: #f1f5f9;
+          font-size: 14px;
+          font-weight: 800;
+          font-family: 'Manrope', sans-serif;
+          letter-spacing: -0.5px;
         }
-        .sidebar-toggle:hover {
-          background: rgba(255,255,255,0.12);
+        .sidebar-brand-text > p {
+          color: #64748b;
+          font-size: 10px;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          margin: 0;
         }
-        .sidebar.collapsed .sidebar-toggle-icon {
-          transform: rotate(180deg);
-        }
-        .nav-section { padding: 8px 12px; flex: 1; }
-        .sidebar.collapsed .nav-section { padding: 8px 8px; }
-        .nav-section-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: #4f5f7b; padding: 0 8px; margin: 0 0 8px; }
+        .nav-section { padding: 16px 12px; flex: 1; }
+        .sidebar.collapsed .nav-section { padding: 16px 8px; }
+        .nav-section-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.15em; color: #475569; padding: 0 12px; margin: 0 0 12px; }
         .sidebar.collapsed .nav-section-label { display: none; }
-        .nav-item { display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 10px; text-decoration: none; color: #8a9bb5; font-size: 13px; font-weight: 600; transition: all 0.2s; margin-bottom: 2px; }
-        .sidebar.collapsed .nav-item { justify-content: center; padding: 11px 8px; }
+        .nav-item { display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-radius: 8px; text-decoration: none; color: #94a3b8; font-size: 13px; font-weight: 700; transition: all 0.2s ease; margin-bottom: 4px; position: relative; }
+        .sidebar.collapsed .nav-item { justify-content: center; padding: 12px 8px; gap: 0; }
         .sidebar.collapsed .nav-item span { display: none; }
-        .nav-item:hover { background: rgba(255,255,255,0.06); color: #c9d4e3; }
-        .nav-item.active { background: linear-gradient(135deg, rgba(115,91,24,0.3), rgba(177,148,76,0.2)); color: #d4a853; }
+        .nav-item:hover { background: rgba(255,255,255,0.08); color: #cbd5e1; }
+        .nav-item.active { background: rgba(212,168,83,0.15); color: #d4a853; border-left: 3px solid #d4a853; padding-left: 11px; }
+        .sidebar.collapsed .nav-item.active { border-left: none; }
+        .nav-item svg { stroke-width: 2.2; }
         .nav-item.active svg { stroke: #d4a853; }
-        .sidebar-footer { padding: 16px 12px; border-top: 1px solid rgba(255,255,255,0.06); }
+        .sidebar-footer { padding: 16px 12px; border-top: 1px solid rgba(255,255,255,0.08); }
         .sidebar.collapsed .sidebar-footer { padding: 12px 0; }
-        .sidebar-user { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-        .user-avatar { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, #735b18, #b1944c); color: white; display: flex; align-items: center; justify-content: center; font-family: 'Manrope', sans-serif; font-weight: 800; font-size: 13px; flex-shrink: 0; }
-        .user-name { font-size: 13px; font-weight: 700; color: #c9d4e3; margin: 0 0 1px; }
-        .user-role { font-size: 10px; color: #4f5f7b; margin: 0; text-transform: uppercase; letter-spacing: 0.08em; }
+        .sidebar-user { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+        .user-avatar { width: 36px; height: 36px; border-radius: 8px; background: linear-gradient(135deg, #d4a853, #b1944c); color: white; display: flex; align-items: center; justify-content: center; font-family: 'Manrope', sans-serif; font-weight: 900; font-size: 13px; flex-shrink: 0; }
+        .sidebar.collapsed .user-avatar { width: 32px; height: 32px; font-size: 11px; }
+        .user-name { font-size: 13px; font-weight: 800; color: #f1f5f9; margin: 0 0 2px; }
+        .user-role { font-size: 10px; color: #64748b; margin: 0; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
         .user-info { flex: 1; min-width: 0; }
-        .logout-btn { background: none; border: none; color: #f43f5e; cursor: pointer; padding: 8px; border-radius: 8px; display: flex; align-items: center; transition: background 0.15s; }
-        .logout-btn:hover { background: rgba(244,63,94,0.1); }
+        .logout-btn { background: none; border: none; color: #94a3b8; cursor: pointer; padding: 10px 12px; border-radius: 8px; display: flex; align-items: center; transition: all 0.15s; font-weight: 700; }
+        .logout-btn:hover { background: rgba(244,63,94,0.15); color: #f43f5e; }
 
         /* ── Main ── */
         .main-content {
-          margin-left: 240px;
-          margin-top: 4rem;
-          flex: 1;
-          min-height: calc(100vh - 4rem);
-          padding: 0 18px;
           display: flex;
+          flex: 1;
+          margin-top: 0;
+          margin-left: 260px;
+          transition: margin-left 0.3s ease;
+          padding: 0 18px;
           justify-content: center;
         }
-        .sidebar.collapsed + .main-content,
-        .shell .sidebar.collapsed + .main-content {
-          margin-left: 72px;
+        .sidebar.collapsed ~ .main-content {
+          margin-left: 84px;
         }
 
         /* ── Loading ── */
         .app-loading { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: #f0ede8; }
         .app-spinner { width: 36px; height: 36px; border: 3px solid rgba(177,148,76,0.2); border-top-color: #b1944c; border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── Responsive ── */
+        @media (max-width: 768px) {
+          .sidebar {
+            width: 220px;
+          }
+          .sidebar.collapsed {
+            width: 64px;
+          }
+          .main-content {
+            margin-left: 220px;
+          }
+          .sidebar.collapsed ~ .main-content {
+            margin-left: 64px;
+          }
+        }
       `}</style>
     </div>
   )
@@ -239,10 +265,13 @@ function Shell() {
 
 /* ─── Root App ──────────────────────────────────────────────────── */
 export default function App() {
+  const [collapsed, setCollapsed] = useState(false)
+  const toggleCollapsed = () => setCollapsed(prev => !prev)
+
   return (
     <AuthProvider>
       <BrowserRouter>
-        <Layout>
+        <Layout onSidebarToggle={toggleCollapsed}>
           <Routes>
             <Route path="/login" element={<LoginGuard />} />
             <Route path="/register" element={<RegisterGuard />} />
@@ -250,7 +279,7 @@ export default function App() {
               path="/*"
               element={
                 <ProtectedRoute>
-                  <Shell />
+                  <Shell collapsed={collapsed} toggleCollapsed={toggleCollapsed} />
                 </ProtectedRoute>
               }
             />
